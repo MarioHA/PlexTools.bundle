@@ -2,8 +2,8 @@ PlexTools.bundle
 ================
 
 A Plex plugin that provides the following:
-* Downloads subtitles from http://www.opensubtitles.org/ that work correctly with the Roku client
-* Converts nearly any type of video to MP4 which can be Direct Played on all Plex clients
+* Downloads subtitles for any videos in your library from http://www.opensubtitles.org/ and modifies them so that work correctly with the Roku client
+* Converts any video in your Plex library to MP4 which can be Direct Played on most/all Plex clients
 
 Installation Instructions
 -------------------------
