@@ -114,7 +114,6 @@ plexToolsThread = None
 def Start():
     ObjectContainer.title1 = TITLE
     ObjectContainer.art = R(ART)
-    ObjectContainer.header = 'PlexTools'
     DirectoryObject.thumb = R(ICON)
     DirectoryObject.art = R(ART)
 
@@ -383,11 +382,11 @@ def SearchSubtitles(subtitles, auto=False):
             data = cleanedList = sortedList = []
 
             if item['type'] == 'episode':
-                data = subs.search_subtitles([{'sublanguageid': SETTINGS['language'], 'imdbid':  item['id'], 'season': item['season'], 'episode': item['episode']}])
+                data = subs.search_subtitles([{'sublanguageid': Prefs['language'], 'imdbid':  item['id'], 'season': item['season'], 'episode': item['episode']}])
             else:
-                data = subs.search_subtitles([{'sublanguageid': SETTINGS['language'], 'imdbid':  item['id']}])
+                data = subs.search_subtitles([{'sublanguageid': Prefs['language'], 'imdbid':  item['id']}])
 
-            if data != False:
+            if data != None:
                 for video in data:
                     if video['SubFormat'] == 'srt':
                         cleanedList.append(video)
