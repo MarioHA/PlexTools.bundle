@@ -11,7 +11,7 @@
         "label": "OpenSubtitles Password",
         "default": "",
         "option": "hidden"
-    },    
+    },
     {
         "id": "language",
         "type": "enum",
@@ -36,9 +36,15 @@
     {
         "id": "abitrate",
         "type": "enum",
-        "label": "Audio Bitrate (kbs)",
+        "label": "Audio Bitrate",
         "values": ["128", "160", "192", "256", "384", "512", "768"],
         "default": "512"
+    },
+    {
+        "id": "vbitrate",
+        "type": "text",
+        "label": "Video Bitrate (kbit/s)",
+        "default": ""
     },
     {
         "id": "acodec",
@@ -58,6 +64,24 @@
         "type": "bool",
         "label": "Enable Folder Renaming",
         "default": "true"
+    },
+    {
+        "id": "iOS",
+        "type": "bool",
+        "label": "Add additional 2ch audio stream",
+        "default": "true"
+    },
+    {
+        "id": "maxchannels",
+        "type": "text",
+        "label": "Max Audio Channels",
+        "default": "6"
+    },
+    {
+        "id": "embedsubs",
+        "type": "bool",
+        "label": "Embed Subtitles",
+        "default": "false"
     },
     {
         "id": "auto_download",

@@ -18,10 +18,14 @@ Installation Instructions
     * `OpenSubtitle Language`: Language preference for subtitles (defaults to English)
     * `FFMPEG_PATH`: Path to FFMPEG (required)
     * `FFPROBE_PATH`: Path to FFProbe (required)
-    * `Audio Bitrate`: The bitrate for the converted video (in kbs)
+    * `Audio Bitrate`: The audio bitrate for the converted video (in kbs)
+    * `Video Bitrate`: The video bitrate for the converted video (in kbs)
     * `Audio Codec`: The audio codec used for the converted video
-    * `Delete Original File`: Delete original video (defaults to false)    
+    * `Delete Original File`: Delete original video (defaults to false)
     * `Enable Folder Renaming`: Enables file renaming
+    * `Add additional 2ch audio stream`: Adds an additional 2ch AAC streaam to converted video
+    * `Max Audio Channels`: Sets the number of channels for the main audio stream
+    * 'Embed Subtitles`: Embeds subtitles into video stream (subtitle must already be downloaded)
     * `Download subtitles in the background`: Enables the Auto Download feature
     * `Frequency to check for new subtitles`: The frequency in hours to check for new subtitles
 

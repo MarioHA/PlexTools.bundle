@@ -128,7 +128,7 @@ class MediaStreamInfo(object):
         elif key == 'sample_rate':
             self.audio_samplerate = self.parse_float(val)
         elif key.lower() == 'tag:language':
-            if val is not None:
+            if val is not None and val.strip() != "":
                 self.language = val
 
         if self.type == 'audio':
@@ -380,7 +380,7 @@ class FFMpeg(object):
             raise FFMpegError("Input file doesn't exist: " + infile)
 
         cmds = [self.ffmpeg_path, '-i', infile]
-        
+
         # Move additional inputs to the front of the line
         for ind, command in enumerate(opts):
             if command == '-i':
@@ -389,8 +389,9 @@ class FFMpeg(object):
                 del opts[ind]
 
         cmds.extend(opts)
+        #cmds.extend(['-movflags', 'faststart'])
+        cmds.extend(['-threads', 'auto'])
         cmds.extend(['-y', outfile])
-
         if timeout and os.name != 'nt':
             def on_sigalrm(*args):
                 signal.signal(signal.SIGALRM, signal.SIG_DFL)

@@ -151,15 +151,15 @@ class SubtitleCodec(BaseCodec):
 
         safe = self._codec_specific_parse_options(safe)
 
-        optlist = ['-c:s:' + stream, self.ffmpeg_codec_name]
-        if 'path' in safe:
-            optlist.extend(['-i', str(safe['path'])])
         if 'source' in safe:
             s = str(safe['source'])
         else:
             s = str('0')
-        if 'map' in safe:
-            optlist.extend(['-map', s + ':' + str(safe['map'])])
+        optlist = ['-map', s + ':' + str(safe['map'])]
+        if 'codec' in safe:
+            optlist.extend(['-c:s:' + stream, self.ffmpeg_codec_name])
+        if 'path' in safe:
+            optlist.extend(['-i', str(safe['path'])])
         if 'default' in safe:
             optlist.extend(['-metadata:s:s:' + stream, "disposition:default=" + str(safe['default'])])
         if 'forced' in safe:
@@ -404,14 +404,26 @@ class VideoCopyCodec(BaseCodec):
     Copy video stream directly from the source.
     """
     codec_name = 'copy'
-    encoder_options = {'map': int}
+    encoder_options = {'map': int,
+                       'bitrate': int}
 
     def parse_options(self, opt):
         safe = self.safe_options(opt)
         optlist = []
-        optlist.extend(['-vcodec', 'copy'])
+
+        if 'bitrate' in safe:
+            br = safe['bitrate']
+            if br < 16 or br > 15000:
+                del safe['bitrate']
+
         if 'map' in safe:
             optlist.extend(['-map', '0:' + str(safe['map'])])
+
+        if 'bitrate' in safe:
+            optlist.extend(['-b', str(safe['bitrate']) + 'k'])
+        else:
+            optlist.extend(['-vcodec', 'copy'])
+
         return optlist
 
 
@@ -449,6 +461,14 @@ class Ac3Codec(AudioCodec):
     """
     codec_name = 'ac3'
     ffmpeg_codec_name = 'ac3'
+
+
+class LibFDKAACCodec(AudioCodec):
+    """
+    LibFDK-AAC audio codec
+    """
+    codec_name = 'libfdk-aac'
+    ffmpeg_codec_name = 'libfdk_aac'
 
 
 class DtsCodec(AudioCodec):
@@ -567,14 +587,29 @@ class Mpeg2Codec(MpegCodec):
 
 class MOVTextCodec(SubtitleCodec):
     """
-    MOV Text video codec.
+    MOV Text subtitle codec.
     """
     codec_name = 'mov_text'
     ffmpeg_codec_name = 'mov_text'
 
 
+class WebVTTCodec(SubtitleCodec):
+    """
+    WebVTT subtitle codec.
+    """
+    codec_name = 'webvtt'
+    ffmpeg_codec_name = 'webvtt'
+
+
+class SrtCodec(SubtitleCodec):
+    """
+    SRT subtitle codec.
+    """
+    codec_name = 'srt'
+    ffmpeg_codec_name = 'srt'
+
 audio_codec_list = [
-    AudioNullCodec, AudioCopyCodec, VorbisCodec, AacCodec, Mp3Codec, Mp2Codec, Ac3Codec, DtsCodec
+    AudioNullCodec, AudioCopyCodec, VorbisCodec, AacCodec, Mp3Codec, Mp2Codec, Ac3Codec, DtsCodec, LibFDKAACCodec
 ]
 
 video_codec_list = [
@@ -584,5 +619,5 @@ video_codec_list = [
 ]
 
 subtitle_codec_list = [
-    MOVTextCodec
+    MOVTextCodec, WebVTTCodec, SrtCodec
 ]

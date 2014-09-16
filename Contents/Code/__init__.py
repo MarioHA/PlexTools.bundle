@@ -20,18 +20,6 @@ SECTION = '/library/sections/%s/all/'
 SECTIONS = '%s/library/sections/'
 TMDB_URL = 'https://api.tmdb.org/3/movie/%s?api_key=a3dc111e66105f6387e99393813ae4d5&append_to_response=releases,credits&language=%s'
 TVDB_URL = 'http://thetvdb.com/api/D4DDDAEFAD083E6F/series/%s'
-SETTINGS = {
-    'opensubtitles_server'  : 'http://api.opensubtitles.org/xml-rpc',
-    'user_agent'            : 'plexapp.com v9.0',
-    'language'              : Prefs['language'],
-    'username'              : Prefs['username'],
-    'password'              : Prefs['password']
-}
-
-def IsFFMpegSet():
-    if Prefs['FFMPEG_PATH'] and Prefs['FFPROBE_PATH']:
-        return True
-    return False
 
 class MP4Settings:
     def __init__(self):
@@ -39,19 +27,43 @@ class MP4Settings:
         self.ffprobe = Prefs['FFPROBE_PATH']
         self.delete = Prefs['delete']
         self.output_extension = 'mp4'
+        self.output_format = 'mp4'
         self.output_dir = None
         self.relocate_moov = True
         self.processMP4 = True
         self.copyto = None
         self.moveto = None
-        self.vcodec = 'h264'
-        self.acodec = Prefs['acodec']
-        self.abitrate = int(Prefs['abitrate'])
-        self.iOS = True
+        self.vcodec = ['h264']
+        self.acodec = [Prefs['acodec']]
+        self.iOS = Prefs['iOS']
         self.awl = Prefs['language']
-        self.swl = Prefs['language']
+        self.swl = [Prefs['language']]
         self.adl = Prefs['language']
         self.sdl = Prefs['language']
+        self.downloadsubs = False
+        self.processMP4 = True
+        self.embedsubs = Prefs['embedsubs']
+        self.subproviders = []
+
+        if Prefs['abitrate']:
+            self.abitrate = int(Prefs['abitrate'])
+        else:
+            self.abitrate = None
+
+        if Prefs['vbitrate']:
+            self.vbitrate = int(Prefs['vbitrate'])
+        else:
+            self.vbitrate = None
+
+        if Prefs['maxchannels']:
+            self.maxchannels = int(Prefs['maxchannels'])
+        else:
+            self.maxchannels = None
+
+def IsFFMpegSet():
+    if Prefs['FFMPEG_PATH'] and Prefs['FFPROBE_PATH']:
+        return True
+    return False
 
 #Used to communicate with the conversion thread.  Make sure to only read from the
 #main thread.  Calling write() or flush() could make the main thread exit if
@@ -125,7 +137,7 @@ def ValidatePrefs():
 ##############################################################################################
 @handler('/video/plextools', TITLE, art=ART, thumb=ICON)
 def MainMenu():
-    oc = ObjectContainer()
+    oc = ObjectContainer(title2=TITLE)
 
     directories = XML.ElementFromURL(SECTIONS % (HOST), cacheTime=0).xpath('//Directory')
     for directory in directories:
@@ -140,7 +152,7 @@ def MainMenu():
 
     oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
     if IsFFMpegSet():
-        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = 'MP4 conversions in progress'))
+        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = 'Active Conversions'))
     return oc
 
 ##############################################################################################
@@ -157,13 +169,13 @@ def ShowSubMenu(key, type=None):
         thumb = element.get('thumb')
         if type == 'show':
             if '/children' in nkey:
-                oc.add(PopupDirectoryObject(key = Callback(ShowSubMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
+                oc.add(DirectoryObject(key = Callback(ShowSubMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
             else:
-                oc.add(PopupDirectoryObject(key = Callback(ShowTaskMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
+                oc.add(DirectoryObject(key = Callback(ShowTaskMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
         else:
-            oc.add(PopupDirectoryObject(key = Callback(ShowTaskMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
+            oc.add(DirectoryObject(key = Callback(ShowTaskMenu, key=nkey, type=type), title = element.get('title'), thumb = thumb, art = art))
     if IsFFMpegSet():
-        try: oc.add(PopupDirectoryObject(key = Callback(ShowTaskMenu, key=key, type=type), title = 'Select All Items', thumb = R(ICON)))
+        try: oc.add(DirectoryObject(key = Callback(ShowTaskMenu, key=key, type=type), title = 'Select All Items', thumb = R(ICON)))
         except: Log.Exception('There was an error adding All Items [%s]', e.message)
     return oc
 
@@ -176,28 +188,28 @@ def ShowTaskMenu(key, type):
     if type=='movie' and Prefs['enable_rename']:
         movies = xml.xpath('//Video')
         if len(movies) == 0: movies = None
-    oc = ObjectContainer(title2='Tasks', no_history=True, no_cache=True)
+    oc = ObjectContainer(title2='Tasks')
     if files and (len(files) == 1):
-        oc.add(PopupDirectoryObject(key = Callback(DownloadSubtitles, key=key, type=type), title = 'Download Subtitles'))
+        oc.add(DirectoryObject(key = Callback(DownloadSubtitles, key=key, type=type), title = 'Download Subtitles'))
     if movies:
         if len(movies) == 1:
             try:
                 (basepath, oldFolderName, newFolderName) = getNewVideoFolderName(movies[0])
                 if newFolderName <> None:
-                    oc.add(PopupDirectoryObject(key = Callback(RenameFolders, key=key, type=type), title = 'Rename Folder to "' + newFolderName + '"'))
+                    oc.add(DirectoryObject(key = Callback(RenameFolders, key=key, type=type), title = 'Rename Folder to "' + newFolderName + '"'))
             except: pass
         else:
-            oc.add(PopupDirectoryObject(key = Callback(RenameFolders, key=key, type=type), title = 'Rename All %s Movie Folders' % len(movies)))
+            oc.add(DirectoryObject(key = Callback(RenameFolders, key=key, type=type), title = 'Rename All %s Movie Folders' % len(movies)))
     if IsFFMpegSet() and files and (len(files) > 0):
         if len(files) > 1:
-            oc.add(PopupDirectoryObject(key = Callback(ConvertToMP4, files=files), title = 'Convert All %s Videos to MP4' % len(files)))
+            oc.add(DirectoryObject(key = Callback(ConvertToMP4, files=files), title = 'Convert All %s Videos to MP4' % len(files)))
         if len(files) < 40:  #limit how many to display
             for i,file in enumerate(files):
                 try:
                     (path, fn) = os.path.split(file)
                     dn = fn if len(fn) < 43 else fn[:20]+"..."+fn[len(fn)-20:]
                     filtered_string = urllib.unquote(dn).decode('utf8')
-                    oc.add(PopupDirectoryObject(key = Callback(ConvertToMP4, files=[file]), title = 'Convert to MP4: %s' % filtered_string))
+                    oc.add(DirectoryObject(key = Callback(ConvertToMP4, files=[file]), title = 'Convert to MP4: %s' % filtered_string))
                 except Exception, e:
                     Log.Exception('There was an error adding file (%s) [%s]', file, e.message)
     return oc
@@ -222,7 +234,7 @@ def DownloadSubtitles(key, type):
                 return ObjectContainer(header='No Subtitles Found', message='No subtitles could be found for your selected language')
             else:
                 for item in data:
-                    oc.add(PopupDirectoryObject(key = Callback(GetSubtitleStatus, url=item['SubDownloadLink'], root=root, filename=filename), summary='Filename: ' + filename, title = item['MovieReleaseName'] + ' (' + item['SubDownloadsCnt'] + ' downloads)'))
+                    oc.add(DirectoryObject(key = Callback(GetSubtitleStatus, url=item['SubDownloadLink'], root=root, filename=filename), summary='Filename: ' + filename, title = item['MovieReleaseName'] + ' (' + item['SubDownloadsCnt'] + ' downloads)'))
         except Exception, e:
             Log.Exception('There was an error connecting to Opensubtitles.org (%s)', e.message)
             return ObjectContainer(header='Error', message='There was an error connecting to Opensubtitles.org')
@@ -287,14 +299,14 @@ def ConvertToMP4(files):
 ##############################################################################################
 @route('/video/plextools/getconversions')
 def GetConversions(junk):
-    oc = ObjectContainer(no_cache=True, no_history=True)
+    oc = ObjectContainer(title2='Active Conversions')
     if lm.isActive():
-        oc.add(PopupDirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = str(lm.getStatus())))
-        oc.add(PopupDirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = str(lm.getLatest())))
-        oc.add(PopupDirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = '[Select to refresh]'))
-        oc.add(PopupDirectoryObject(key = Callback(CancelConversions), title = 'Cancel Conversions'))
+        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = str(lm.getStatus())))
+        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = str(lm.getLatest())))
+        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = '[Select to refresh]'))
+        oc.add(DirectoryObject(key = Callback(CancelConversions), title = 'Cancel Conversions'))
     else:
-        oc.add(PopupDirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = 'No active conversions'))
+        oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = 'No active conversions'))
     return oc
 
 ##############################################################################################
@@ -331,7 +343,7 @@ def AutoDownload():
                     video_path = item.get('key')
                     if type == 'movie':
                         video_data = XML.ElementFromURL(HOST + video_path, cacheTime=0)
-                        streams = video_data.xpath("//Stream[@format='srt' and @languageCode='" + SETTINGS['language'] + "']")
+                        streams = video_data.xpath("//Stream[@format='srt' and @languageCode='" + Prefs['language'] + "']")
                         if len(streams) == 0:
                             root,filename = GetPaths(item)
                             guid = GetIMDBID(video_data.xpath('//Video')[0].get('guid'))
@@ -376,8 +388,14 @@ def SearchSubtitles(subtitles, auto=False):
     try:
         sortedList = []
         update = False
-        subs = OpenSubtitles(SETTINGS)
-        token = subs.login(SETTINGS['username'], SETTINGS['password'])
+        subs = OpenSubtitles({
+            'opensubtitles_server'  : 'http://api.opensubtitles.org/xml-rpc',
+            'user_agent'            : 'plexapp.com v9.0',
+            'language'              : Prefs['language'],
+            'username'              : Prefs['username'],
+            'password'              : Prefs['password']
+        })
+        token = subs.login(Prefs['username'], Prefs['password'])
         for item in subtitles:
             data = cleanedList = sortedList = []
 
@@ -386,7 +404,7 @@ def SearchSubtitles(subtitles, auto=False):
             else:
                 data = subs.search_subtitles([{'sublanguageid': Prefs['language'], 'imdbid':  item['id']}])
 
-            if data != None:
+            if data != None and data != False:
                 for video in data:
                     if video['SubFormat'] == 'srt':
                         cleanedList.append(video)
@@ -408,7 +426,7 @@ def SearchSubtitles(subtitles, auto=False):
 
 def WriteSubtitle(url, root, filename):
     message = 0
-    name = os.path.join(root, filename + '.' + SETTINGS['language'] + '.srt')
+    name = os.path.join(root, filename + '.' + Prefs['language'] + '.srt')
     try:
         if url:
             gzip = HTTP.Request(url, headers={'Accept-Encoding':'gzip'}).content
