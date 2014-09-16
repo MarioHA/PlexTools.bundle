@@ -25,7 +25,7 @@ Installation Instructions
     * `Enable Folder Renaming`: Enables file renaming
     * `Add additional 2ch audio stream`: Adds an additional 2ch AAC streaam to converted video
     * `Max Audio Channels`: Sets the number of channels for the main audio stream
-    * 'Embed Subtitles`: Embeds subtitles into video stream (subtitle must already be downloaded)
+    * `Embed Subtitles`: Embeds subtitles into video stream (subtitle must already be downloaded)
     * `Download subtitles in the background`: Enables the Auto Download feature
     * `Frequency to check for new subtitles`: The frequency in hours to check for new subtitles
 
