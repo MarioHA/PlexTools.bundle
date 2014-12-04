@@ -1,5 +1,18 @@
 [
     {
+        "id": "myplexuser",
+        "type": "text",
+        "label": "MyPlex Username",
+        "default": ""
+    },
+    {
+        "id": "myplexpassword",
+        "type": "text",
+        "label": "MyPlex Password",
+        "default": "",
+        "option": "hidden"
+    },
+    {
         "id": "username",
         "type": "text",
         "label": "OpenSubtitles Username",

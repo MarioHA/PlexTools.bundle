@@ -7,19 +7,22 @@ import sys
 import logging, re
 import time
 import urllib
+import base64
 from opensubtitles import OpenSubtitles
 from mkvtomp4 import MkvtoMp4
 
 VIDEO_PREFIX = '/video/plextools'
-TITLE = 'Plex Tools'
-ART = 'art-default.jpg'
-ICON = 'icon-default.png'
-ICON_PREFS = 'icon-prefs.png'
-HOST = 'http://localhost:32400'
-SECTION = '/library/sections/%s/all/'
-SECTIONS = '%s/library/sections/'
-TMDB_URL = 'https://api.tmdb.org/3/movie/%s?api_key=a3dc111e66105f6387e99393813ae4d5&append_to_response=releases,credits&language=%s'
-TVDB_URL = 'http://thetvdb.com/api/D4DDDAEFAD083E6F/series/%s'
+TITLE        = 'Plex Tools'
+ART          = 'art-default.jpg'
+ICON         = 'icon-default.png'
+ICON_PREFS   = 'icon-prefs.png'
+HOST         = 'http://localhost:32400'
+SECTION      = '/library/sections/%s/all/'
+SECTIONS     = '%s/library/sections/'
+TMDB_URL     = 'https://api.tmdb.org/3/movie/%s?api_key=a3dc111e66105f6387e99393813ae4d5&append_to_response=releases,credits&language=%s'
+TVDB_URL     = 'http://thetvdb.com/api/D4DDDAEFAD083E6F/series/%s'
+TOKEN_URL    = 'https://plex.tv/users/sign_in.json'
+TOKEN        = None
 
 class MP4Settings:
     def __init__(self):
@@ -123,6 +126,20 @@ sys.stdout = lm
 plexToolsThread = None
 
 ##############################################################################################
+def Request(url):
+    global TOKEN
+    if TOKEN == None:
+        if Prefs['myplexuser'] and Prefs['myplexpassword']:
+            headers = {
+                'Authorization': 'Basic ' + base64.encodestring("%s:%s" % (Prefs['myplexuser'], Prefs['myplexpassword']))[:-1],
+                'X-Plex-Client-Identifier': 'PlexTools1.0',
+                'X-Plex-Product': 'Plex Tools',
+                'X-Plex-Version': '1.0'
+            }
+            TOKEN = JSON.ObjectFromURL(TOKEN_URL, values={'test':'test'}, headers=headers)['user']['authentication_token']
+    return XML.ElementFromURL(url, cacheTime=0, headers={'X-Plex-Token': TOKEN})
+
+##############################################################################################
 def Start():
     ObjectContainer.title1 = TITLE
     ObjectContainer.art = R(ART)
@@ -139,7 +156,7 @@ def ValidatePrefs():
 def MainMenu():
     oc = ObjectContainer(title2=TITLE)
 
-    directories = XML.ElementFromURL(SECTIONS % (HOST), cacheTime=0).xpath('//Directory')
+    directories = Request(SECTIONS % (HOST)).xpath('//Directory')
     for directory in directories:
         oc.add(
             DirectoryObject(
@@ -158,7 +175,7 @@ def MainMenu():
 ##############################################################################################
 @route('/video/plextools/showsubmenu')
 def ShowSubMenu(key, type=None):
-    xml = XML.ElementFromURL(HOST + key)
+    xml = Request(HOST + key)
     elements = xml.xpath('/*/*')
     try: title2 = xml.xpath('//MediaContainer')[0].get('title1')
     except: title2 = 'Plex Tools'
@@ -182,7 +199,7 @@ def ShowSubMenu(key, type=None):
 ##############################################################################################
 @route('/video/plextools/showtaskmenu')
 def ShowTaskMenu(key, type):
-    xml = XML.ElementFromURL(HOST + key)
+    xml = Request(HOST + key)
     files = xml.xpath('//Media/Part/@file')
     movies = None
     if type=='movie' and Prefs['enable_rename']:
@@ -218,7 +235,7 @@ def ShowTaskMenu(key, type):
 @route('/video/plextools/downloadsubtitles')
 def DownloadSubtitles(key, type):
     subtitles = []
-    video = XML.ElementFromURL(HOST + key).xpath('//Video')[0]
+    video = Request(HOST + key).xpath('//Video')[0]
     root,filename = GetPaths(video)
     oc = ObjectContainer(no_cache=True, title2='Subtitles')
     if video:
@@ -259,7 +276,7 @@ def RenameFolders(key, type):
     if lm.isActive():
         Log.Info('Rename not started - thread already running')
         return ObjectContainer(header='Cannot rename folder', message='Cannot run yet.  Conversion or Renaming is already in progress')
-    xml = XML.ElementFromURL(HOST + key)
+    xml = Request(HOST + key)
     movies = xml.xpath('//Video')
     if movies and (len(movies) > 0):
         try:
@@ -319,7 +336,7 @@ def CancelConversions():
 def AutoDownload():
     subtitles = []
     while Prefs['auto_download']:
-        directories = XML.ElementFromURL(SECTIONS % (HOST), cacheTime=0).xpath('//Directory')
+        directories = Request(SECTIONS % (HOST)).xpath('//Directory')
         for directory in directories:
 
             ##### Check inside every loop #####
@@ -333,7 +350,7 @@ def AutoDownload():
                 continue
             else:
                 key = directory.get('key')
-                items = XML.ElementFromURL(HOST + SECTION % (key)).xpath('/*/*')
+                items = Request(HOST + SECTION % (key)).xpath('/*/*')
                 for item in items:
                     ##### Check inside every loop #####
                     if Prefs['auto_download'] == False:
@@ -342,14 +359,14 @@ def AutoDownload():
 
                     video_path = item.get('key')
                     if type == 'movie':
-                        video_data = XML.ElementFromURL(HOST + video_path, cacheTime=0)
+                        video_data = Request(HOST + video_path)
                         streams = video_data.xpath("//Stream[@format='srt' and @languageCode='" + Prefs['language'] + "']")
                         if len(streams) == 0:
                             root,filename = GetPaths(item)
                             guid = GetIMDBID(video_data.xpath('//Video')[0].get('guid'))
                             subtitles.append({'type':'movie', 'root':root, 'filename':filename, 'id':guid})
                     else:
-                        seasons = XML.ElementFromURL(HOST + video_path, cacheTime=0).xpath('//Directory')
+                        seasons = Request(HOST + video_path).xpath('//Directory')
                         for season in seasons:
 
                             ##### Check inside every loop #####
@@ -358,7 +375,7 @@ def AutoDownload():
                             ###################################
 
                             season_key = season.get('key')
-                            episodes = XML.ElementFromURL(HOST + season_key, cacheTime=0).xpath('//Video')
+                            episodes = Request(HOST + season_key).xpath('//Video')
                             for episode in episodes:
 
                                 ##### Check inside every loop #####
@@ -367,7 +384,7 @@ def AutoDownload():
                                 ###################################
 
                                 episode_key = episode.get('key')
-                                video = XML.ElementFromURL(HOST + episode_key, cacheTime=0)
+                                video = Request(HOST + episode_key)
                                 streams = video.xpath("//Stream[@format='srt' and @languageCode='" + Prefs['language'] + "']")
                                 if len(streams) == 0:
                                     data = video.xpath('//Video')[0]
@@ -465,7 +482,7 @@ def ParseSRT(data):
     return ''.join(lines).strip('\r\n')
 
 def UpdateLibrary():
-    sections = XML.ElementFromURL(SECTIONS % (HOST), cacheTime=0).xpath('//Directory')
+    sections = Request(SECTIONS % (HOST)).xpath('//Directory')
     for section in sections:
         key = section.get('key')
         Log.Info('Updating section #' + key)
