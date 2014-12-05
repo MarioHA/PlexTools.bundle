@@ -126,7 +126,7 @@ sys.stdout = lm
 plexToolsThread = None
 
 ##############################################################################################
-def Request(url):
+def Request(url, raw=False):
     global TOKEN
     if TOKEN == None:
         if Prefs['myplexuser'] and Prefs['myplexpassword']:
@@ -137,7 +137,10 @@ def Request(url):
                 'X-Plex-Version': '1.0'
             }
             TOKEN = JSON.ObjectFromURL(TOKEN_URL, values={'test':'test'}, headers=headers)['user']['authentication_token']
-    return XML.ElementFromURL(url, cacheTime=0, headers={'X-Plex-Token': TOKEN})
+    if raw:
+        return HTTP.Request(url, cacheTime=0, headers={'X-Plex-Token': TOKEN}).content
+    else:
+        return XML.ElementFromURL(url, cacheTime=0, headers={'X-Plex-Token': TOKEN})
 
 ##############################################################################################
 def Start():
@@ -486,7 +489,7 @@ def UpdateLibrary():
     for section in sections:
         key = section.get('key')
         Log.Info('Updating section #' + key)
-        data = HTTP.Request(SECTIONS % (HOST) + key + '/refresh', cacheTime=0).content
+        data = Request(SECTIONS % (HOST) + key + '/refresh', raw=True)
 
     return data
 
