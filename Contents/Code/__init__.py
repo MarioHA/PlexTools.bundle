@@ -16,9 +16,11 @@ TITLE        = 'Plex Tools'
 ART          = 'art-default.jpg'
 ICON         = 'icon-default.png'
 ICON_PREFS   = 'icon-prefs.png'
+SEARCH_ICON  = 'icon-search.png'
 HOST         = 'http://localhost:32400'
 SECTION      = '/library/sections/%s/all/'
 SECTIONS     = '%s/library/sections/'
+SEARCH_URL   = '/search?local=1&query=%s'
 TMDB_URL     = 'https://api.tmdb.org/3/movie/%s?api_key=a3dc111e66105f6387e99393813ae4d5&append_to_response=releases,credits&language=%s'
 TVDB_URL     = 'http://thetvdb.com/api/D4DDDAEFAD083E6F/series/%s'
 TOKEN_URL    = 'https://plex.tv/users/sign_in.json'
@@ -171,6 +173,7 @@ def MainMenu():
         )
 
     oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
+    oc.add(InputDirectoryObject(key=Callback(Search), title='Search', prompt='Search for shows and movies', thumb=R(SEARCH_ICON)))
     if IsFFMpegSet():
         oc.add(DirectoryObject(key = Callback(GetConversions, junk=str(Util.Random())), title = 'Active Conversions'))
     return oc
@@ -185,6 +188,9 @@ def ShowSubMenu(key, type=None):
     oc = ObjectContainer(title2=title2,no_cache=True)
     for element in elements:
         nkey = element.get('key')
+        if 'search' in nkey:
+            continue
+
         art = element.get('art')
         thumb = element.get('thumb')
         if type == 'show':
@@ -198,6 +204,11 @@ def ShowSubMenu(key, type=None):
         try: oc.add(DirectoryObject(key = Callback(ShowTaskMenu, key=key, type=type), title = 'Select All Items', thumb = R(ICON)))
         except: Log.Exception('There was an error adding All Items [%s]', e.message)
     return oc
+
+################################################################################
+@route('/video/plextools/search')
+def Search(query):
+    return ShowSubMenu(SEARCH_URL % query)
 
 ##############################################################################################
 @route('/video/plextools/showtaskmenu')
