@@ -190,6 +190,8 @@ def ShowSubMenu(key, type=None):
         nkey = element.get('key')
         if 'search' in nkey:
             continue
+        if type == None:
+            type = element.get('type')
 
         art = element.get('art')
         thumb = element.get('thumb')
