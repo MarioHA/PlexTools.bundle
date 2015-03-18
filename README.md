@@ -16,8 +16,8 @@ Installation Instructions
     * `OpenSubtitles Username`: OpenSubtitles account name (required)
     * `OpenSubtitles Password`: Password for OpenSubtitles account (required)
     * `OpenSubtitle Language`: Language preference for subtitles (defaults to English)
-    * `FFMPEG_PATH`: Path to FFMPEG (required)
-    * `FFPROBE_PATH`: Path to FFProbe (required)
+    * `FFMPEG_PATH`: Path to FFMPEG (including binary) (required)
+    * `FFPROBE_PATH`: Path to FFProbe (including binary) (required)
     * `Audio Bitrate`: The audio bitrate for the converted video (in kbs)
     * `Video Bitrate`: The video bitrate for the converted video (in kbs)
     * `Audio Codec`: The audio codec used for the converted video
