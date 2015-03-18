@@ -37,13 +37,13 @@
     {
         "id": "FFMPEG_PATH",
         "type": "text",
-        "label": "Path to FFMPEG.exe",
+        "label": "Path to FFMPEG (including binary)",
         "default": ""
     },
     {
         "id": "FFPROBE_PATH",
         "type": "text",
-        "label": "Path to FFPROBE.exe",
+        "label": "Path to FFPROBE (including binary)",
         "default": ""
     },
     {
